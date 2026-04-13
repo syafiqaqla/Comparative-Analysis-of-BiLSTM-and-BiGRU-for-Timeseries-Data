@@ -33,7 +33,7 @@ warnings.filterwarnings('ignore')
 # ============================================================
 # CONSTANTS
 # ============================================================
-PROPORTION_SCALER_MAX = 10501.0  # BBCA ATH
+PROPORTION_SCALER_MAX = 10501.0 # BBCA ATH
 LOOKBACK = 60
 EPOCHS = 200
 BATCH_SIZE = 64
@@ -60,7 +60,7 @@ STOCK_COLORS = {
     'ASII': '#009E73',
     'UNVR': '#CC79A7',
 }
-ACTUAL_COLOR = '#000000'  # Black for actual values
+ACTUAL_COLOR = "#808080"  # Black for actual values
 
 # ============================================================
 # REPRODUCIBILITY
@@ -499,7 +499,7 @@ def train_and_evaluate(model_type, X_train, y_train, X_test, y_test,
         epochs=epochs,
         batch_size=batch_size,
         validation_split=0.1,
-        callbacks=[checkpoint, early_stop],
+        callbacks=[checkpoint], # Early stopping will restore best weights, so no need to save last model separately
         shuffle=True,  # Shuffling independent sequences is fine
         verbose=1
     )
