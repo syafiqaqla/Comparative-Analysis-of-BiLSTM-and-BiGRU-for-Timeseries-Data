@@ -35,7 +35,7 @@ warnings.filterwarnings('ignore')
 # ============================================================
 PROPORTION_SCALER_MAX = 10501.0 # BBCA ATH
 LOOKBACK = 60
-EPOCHS = 200
+EPOCHS = 100
 BATCH_SIZE = 64
 UNITS = 64
 DROPOUT_RATE = 0.2
@@ -136,13 +136,13 @@ def check_gpu():
 def set_ieee_style():
     """Configure matplotlib for IEEE publication-quality figures."""
     plt.rcParams.update({
-        'font.size': 12,
+        'font.size': 16,
         'axes.titlesize': 16,
         'axes.titleweight': 'bold',
         'axes.labelsize': 14,
-        'xtick.labelsize': 11,
-        'ytick.labelsize': 11,
-        'legend.fontsize': 11,
+        'xtick.labelsize': 14,
+        'ytick.labelsize': 14,
+        'legend.fontsize': 14,
         'legend.framealpha': 0.9,
         'figure.figsize': (10, 6),
         'figure.dpi': 100,
