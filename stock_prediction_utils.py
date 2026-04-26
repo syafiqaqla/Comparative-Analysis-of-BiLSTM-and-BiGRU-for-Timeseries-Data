@@ -535,7 +535,7 @@ def train_and_evaluate(model_type, X_train, y_train, X_test, y_test,
 # ============================================================
 # VISUALIZATION FUNCTIONS
 # ============================================================
-def save_fig(fig, filepath, dpi=300):
+def save_fig(fig, filepath, dpi=600):
     """Save figure at publication quality."""
     os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
     fig.savefig(filepath, dpi=dpi, bbox_inches='tight', pad_inches=0.1,
