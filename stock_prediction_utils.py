@@ -34,7 +34,7 @@ warnings.filterwarnings('ignore')
 # CONSTANTS
 # ============================================================
 PROPORTION_SCALER_MAX = 10501.0 # BBCA ATH
-LOOKBACK = 60
+LOOKBACK = 1
 EPOCHS = 100
 BATCH_SIZE = 64
 UNITS = 64
@@ -60,7 +60,7 @@ STOCK_COLORS = {
     'ASII': '#009E73',
     'UNVR': '#CC79A7',
 }
-ACTUAL_COLOR = "#808080"  # Black for actual values
+ACTUAL_COLOR = "#EAEAEA"  # Black for actual values
 
 # ============================================================
 # REPRODUCIBILITY
@@ -535,7 +535,7 @@ def train_and_evaluate(model_type, X_train, y_train, X_test, y_test,
 # ============================================================
 # VISUALIZATION FUNCTIONS
 # ============================================================
-def save_fig(fig, filepath, dpi=600):
+def save_fig(fig, filepath, dpi=300):
     """Save figure at publication quality."""
     os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
     fig.savefig(filepath, dpi=dpi, bbox_inches='tight', pad_inches=0.1,
