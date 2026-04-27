@@ -63,7 +63,7 @@ STOCK_COLORS = {
     'ASII': '#009E73',
     'UNVR': '#CC79A7',
 }
-ACTUAL_COLOR = "#F3F3F3"  # Black for actual values
+ACTUAL_COLOR = "#9A9A9A"  # Black for actual values
 
 # ============================================================
 # REPRODUCIBILITY
@@ -1316,6 +1316,9 @@ def create_interactive_transfer_matrix(results_df, metric, experiment_label, sav
     """
     os.makedirs(save_dir, exist_ok=True)
     
+    last_fig = None
+    last_html = None
+    
     # For each model, create a separate heatmap
     for model in MODEL_TYPES:
         model_data = results_df[results_df['Model'] == model]
@@ -1345,6 +1348,13 @@ def create_interactive_transfer_matrix(results_df, metric, experiment_label, sav
         
         html_file = f'{save_dir}/{experiment_label}_{model}_transfer_matrix_{metric}.html'
         fig.write_html(html_file)
+        
+        # Keep track of the last figure created (for display)
+        last_fig = fig
+        last_html = html_file
+    
+    # Return the last figure created (typically BiLSTM for example display)
+    return last_fig, last_html
 
 def create_interactive_metrics_comparison(results_df, experiment_label, save_dir='figures', metrics=['RMSE', 'MAE', 'R2']):
     """
