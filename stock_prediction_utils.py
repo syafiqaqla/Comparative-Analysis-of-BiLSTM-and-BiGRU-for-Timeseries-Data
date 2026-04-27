@@ -28,6 +28,9 @@ from tensorflow.keras.layers import (
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
 warnings.filterwarnings('ignore')
 
 # ============================================================
@@ -60,7 +63,7 @@ STOCK_COLORS = {
     'ASII': '#009E73',
     'UNVR': '#CC79A7',
 }
-ACTUAL_COLOR = "#EAEAEA"  # Black for actual values
+ACTUAL_COLOR = "#F3F3F3"  # Black for actual values
 
 # ============================================================
 # REPRODUCIBILITY
@@ -136,13 +139,13 @@ def check_gpu():
 def set_ieee_style():
     """Configure matplotlib for IEEE publication-quality figures."""
     plt.rcParams.update({
-        'font.size': 16,
-        'axes.titlesize': 16,
+        'font.size': 20,
+        'axes.titlesize': 20,
         'axes.titleweight': 'bold',
-        'axes.labelsize': 14,
-        'xtick.labelsize': 14,
-        'ytick.labelsize': 14,
-        'legend.fontsize': 14,
+        'axes.labelsize': 20,
+        'xtick.labelsize': 20,
+        'ytick.labelsize': 20,
+        'legend.fontsize': 20,
         'legend.framealpha': 0.9,
         'figure.figsize': (10, 6),
         'figure.dpi': 100,
@@ -682,6 +685,361 @@ def plot_metrics_heatmap(results_df, metric, experiment_label,
                  .replace(' ', '_').replace('(%)', 'pct'))
         save_fig(fig, fname)
 
+# ============================================================
+# INTERACTIVE DATA SPLITTING VISUALIZATION (Plotly)
+# ============================================================
+def create_interactive_data_split_visualization(df, train_ratio, stock_name, 
+                                                experiment_label, save_dir='figures'):
+    """
+    Create an interactive visualization showing the train/test data split.
+    
+    Args:
+        df: DataFrame with 'Date' and 'Close' columns
+        train_ratio: Train/test split ratio (e.g., 0.8 for 80/20)
+        stock_name: Name of the stock
+        experiment_label: Label for the experiment (e.g., 'Exp1_80_20')
+        save_dir: Directory to save the HTML file
+    
+    Returns:
+        fig: Plotly figure object
+    """
+    os.makedirs(save_dir, exist_ok=True)
+    
+    close_values = df['Close'].values.astype(np.float64)
+    # Convert dates to pandas DatetimeIndex for consistent type handling
+    dates = pd.to_datetime(df['Date'].values)
+    
+    # Calculate split point
+    split_idx = int(len(close_values) * train_ratio)
+    split_date = dates[split_idx]  # Already a Timestamp from DatetimeIndex
+    
+    train_dates = dates[:split_idx]
+    test_dates = dates[split_idx:]
+    train_prices = close_values[:split_idx]
+    test_prices = close_values[split_idx:]
+    
+    # Create figure with secondary y-axis for visualization
+    fig = go.Figure()
+    
+    # Add training data
+    fig.add_trace(
+        go.Scatter(
+            x=train_dates, y=train_prices,
+            name='Training Data',
+            mode='lines',
+            line=dict(color='#0072B2', width=2.5),
+            hovertemplate='<b>Training</b><br>Date: %{x|%Y-%m-%d}<br>Price: IDR %{y:,.2f}<extra></extra>',
+        )
+    )
+    
+    # Add test data
+    fig.add_trace(
+        go.Scatter(
+            x=test_dates, y=test_prices,
+            name='Test Data',
+            mode='lines',
+            line=dict(color='#D55E00', width=2.5),
+            hovertemplate='<b>Test</b><br>Date: %{x|%Y-%m-%d}<br>Price: IDR %{y:,.2f}<extra></extra>',
+        )
+    )
+    
+    # Add split point marker (without annotation to avoid Plotly datetime calculation issues)
+    fig.add_vline(
+        x=split_date,
+        line_dash="dash",
+        line_color="red",
+        opacity=0.7
+    )
+    
+    # Add annotation for split point separately
+    fig.add_annotation(
+        text=f"<b>Split Point</b><br>{split_date.strftime('%Y-%m-%d')}",
+        x=split_date,
+        y=1.0,
+        yref="paper",
+        showarrow=True,
+        arrowhead=2,
+        arrowsize=1,
+        arrowwidth=2,
+        arrowcolor="red",
+        ax=0,
+        ay=-50,
+        bgcolor="rgba(255, 255, 255, 0.9)",
+        bordercolor="red",
+        borderwidth=1,
+        font=dict(size=10, color="red")
+    )
+    
+    # Calculate statistics
+    train_count = len(train_prices)
+    test_count = len(test_prices)
+    total_count = train_count + test_count
+    train_pct = (train_count / total_count) * 100
+    test_pct = (test_count / total_count) * 100
+    
+    # Create statistics text
+    stats_text = (
+        f"<b>Data Split Statistics</b><br>"
+        f"Train Samples: {train_count} ({train_pct:.1f}%)<br>"
+        f"Test Samples: {test_count} ({test_pct:.1f}%)<br>"
+        f"Total Samples: {total_count}<br>"
+        f"<br>"
+        f"<b>Date Range</b><br>"
+        f"Start: {dates[0].strftime('%Y-%m-%d')}<br>"
+        f"Split: {split_date.strftime('%Y-%m-%d')}<br>"
+        f"End: {dates[-1].strftime('%Y-%m-%d')}<br>"
+        f"<br>"
+        f"<b>Price Statistics</b><br>"
+        f"Train Min: IDR {train_prices.min():,.2f}<br>"
+        f"Train Max: IDR {train_prices.max():,.2f}<br>"
+        f"Test Min: IDR {test_prices.min():,.2f}<br>"
+        f"Test Max: IDR {test_prices.max():,.2f}"
+    )
+    
+    # Add annotation box with statistics
+    fig.add_annotation(
+        text=stats_text,
+        xref="paper", yref="paper",
+        x=0.02, y=0.98,
+        showarrow=False,
+        bgcolor="white",
+        bordercolor="gray",
+        borderwidth=1,
+        font=dict(size=11),
+        align="left",
+        xanchor="left",
+        yanchor="top"
+    )
+    
+    # Update layout
+    fig.update_layout(
+        title=f"<b>{stock_name} - Data Split Visualization ({train_ratio*100:.0f}/{(1-train_ratio)*100:.0f})</b>",
+        xaxis_title="Date",
+        yaxis_title="Price (IDR)",
+        template="plotly_white",
+        hovermode="x unified",
+        height=600,
+        font=dict(size=12),
+        xaxis=dict(
+            rangeslider=dict(visible=True, thickness=0.05),
+            type="date",
+            gridwidth=1,
+            gridcolor="lightgray"
+        ),
+        yaxis=dict(
+            gridwidth=1,
+            gridcolor="lightgray"
+        ),
+        legend=dict(
+            x=0.99,
+            y=0.01,
+            xanchor="right",
+            yanchor="bottom",
+            bgcolor="rgba(255, 255, 255, 0.8)",
+            bordercolor="gray",
+            borderwidth=1
+        ),
+        showlegend=True
+    )
+    
+    # Save as HTML
+    ratio_str = f"{int(train_ratio*100)}_{int((1-train_ratio)*100)}"
+    html_filename = f'{save_dir}/interactive_data_split_{stock_name}_{ratio_str}.html'
+    fig.write_html(html_filename)
+    
+    return fig, html_filename
+
+def create_interactive_split_summary_visualization(daily_data, train_ratio, 
+                                                    experiment_label, 
+                                                    save_dir='figures'):
+    """
+    Create a summary visualization showing data splits for all stocks.
+    
+    Args:
+        daily_data: Dictionary of DataFrames {stock_name: df}
+        train_ratio: Train/test split ratio
+        experiment_label: Label for experiment
+        save_dir: Directory to save
+    """
+    os.makedirs(save_dir, exist_ok=True)
+    
+    # Create subplots for all stocks
+    fig = make_subplots(
+        rows=2, cols=2,
+        subplot_titles=STOCKS,
+        specs=[[{"secondary_y": False}, {"secondary_y": False}],
+               [{"secondary_y": False}, {"secondary_y": False}]],
+        vertical_spacing=0.15,
+        horizontal_spacing=0.12
+    )
+    
+    row_col_pairs = [(1, 1), (1, 2), (2, 1), (2, 2)]
+    
+    for idx, stock in enumerate(STOCKS):
+        row, col = row_col_pairs[idx]
+        df = daily_data[stock]
+        
+        close_values = df['Close'].values.astype(np.float64)
+        # Convert dates to pandas DatetimeIndex for consistent type handling
+        dates = pd.to_datetime(df['Date'].values)
+        
+        split_idx = int(len(close_values) * train_ratio)
+        split_date = dates[split_idx]  # Already a Timestamp from DatetimeIndex
+        
+        train_dates = dates[:split_idx]
+        test_dates = dates[split_idx:]
+        train_prices = close_values[:split_idx]
+        test_prices = close_values[split_idx:]
+        
+        # Add training data
+        fig.add_trace(
+            go.Scatter(
+                x=train_dates, y=train_prices,
+                name='Training',
+                mode='lines',
+                line=dict(color='#0072B2', width=1.5),
+                hovertemplate='<b>Train</b><br>%{x|%Y-%m-%d}<br>IDR %{y:,.0f}<extra></extra>',
+                showlegend=(idx == 0),
+                legendgroup="train"
+            ),
+            row=row, col=col
+        )
+        
+        # Add test data
+        fig.add_trace(
+            go.Scatter(
+                x=test_dates, y=test_prices,
+                name='Test',
+                mode='lines',
+                line=dict(color='#D55E00', width=1.5),
+                hovertemplate='<b>Test</b><br>%{x|%Y-%m-%d}<br>IDR %{y:,.0f}<extra></extra>',
+                showlegend=(idx == 0),
+                legendgroup="test"
+            ),
+            row=row, col=col
+        )
+        
+        # Add split line
+        fig.add_vline(
+            x=split_date,
+            line_dash="dash",
+            line_color="red",
+            opacity=0.5,
+            row=row, col=col
+        )
+        
+        # Update axes
+        fig.update_xaxes(title_text="Date", row=row, col=col)
+        fig.update_yaxes(title_text="Price (IDR)", row=row, col=col)
+    
+    # Update layout
+    ratio_label = f"{int(train_ratio*100)}/{int((1-train_ratio)*100)}"
+    fig.update_layout(
+        title=f"<b>Data Split Visualization - All Stocks ({ratio_label})</b>",
+        height=900,
+        template='plotly_white',
+        hovermode='x unified',
+        font=dict(size=10),
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+    
+    # Save as HTML
+    ratio_str = f"{int(train_ratio*100)}_{int((1-train_ratio)*100)}"
+    html_filename = f'{save_dir}/interactive_data_split_all_stocks_{ratio_str}.html'
+    fig.write_html(html_filename)
+    
+    return fig, html_filename
+
+def create_interactive_split_bar_chart(daily_data, train_ratio, 
+                                       experiment_label, save_dir='figures'):
+    """
+    Create an interactive bar chart showing train/test split statistics.
+    """
+    os.makedirs(save_dir, exist_ok=True)
+    
+    stats_data = {
+        'Stock': [],
+        'Training Samples': [],
+        'Test Samples': [],
+        'Total Samples': [],
+        'Train %': [],
+        'Test %': []
+    }
+    
+    for stock in STOCKS:
+        df = daily_data[stock]
+        total = len(df)
+        split_idx = int(total * train_ratio)
+        train_count = split_idx
+        test_count = total - split_idx
+        
+        stats_data['Stock'].append(stock)
+        stats_data['Training Samples'].append(train_count)
+        stats_data['Test Samples'].append(test_count)
+        stats_data['Total Samples'].append(total)
+        stats_data['Train %'].append(train_ratio * 100)
+        stats_data['Test %'].append((1 - train_ratio) * 100)
+    
+    # Create stacked bar chart
+    fig = go.Figure()
+    
+    fig.add_trace(go.Bar(
+        name='Training',
+        x=stats_data['Stock'],
+        y=stats_data['Training Samples'],
+        marker_color='#0072B2',
+        hovertemplate='<b>%{x} - Training</b><br>Samples: %{y}<extra></extra>',
+        text=stats_data['Training Samples'],
+        textposition='inside',
+        textfont=dict(color='white', size=11)
+    ))
+    
+    fig.add_trace(go.Bar(
+        name='Test',
+        x=stats_data['Stock'],
+        y=stats_data['Test Samples'],
+        marker_color='#D55E00',
+        hovertemplate='<b>%{x} - Test</b><br>Samples: %{y}<extra></extra>',
+        text=stats_data['Test Samples'],
+        textposition='inside',
+        textfont=dict(color='white', size=11)
+    ))
+    
+    ratio_label = f"{int(train_ratio*100)}/{int((1-train_ratio)*100)}"
+    fig.update_layout(
+        title=f"<b>Data Split Statistics - All Stocks ({ratio_label})</b>",
+        barmode='stack',
+        xaxis_title="Stock",
+        yaxis_title="Sample Count",
+        template='plotly_white',
+        height=500,
+        font=dict(size=12),
+        hovermode='x unified',
+        legend=dict(
+            x=0.99,
+            y=0.99,
+            xanchor="right",
+            yanchor="top",
+            bgcolor="rgba(255, 255, 255, 0.8)",
+            bordercolor="gray",
+            borderwidth=1
+        )
+    )
+    
+    # Save as HTML
+    ratio_str = f"{int(train_ratio*100)}_{int((1-train_ratio)*100)}"
+    html_filename = f'{save_dir}/interactive_split_statistics_{ratio_str}.html'
+    fig.write_html(html_filename)
+    
+    return fig, html_filename
+
 def create_results_summary_table(all_results):
     """Convert list of result dicts to a formatted DataFrame."""
     df = pd.DataFrame(all_results)
@@ -766,6 +1124,303 @@ def perform_stationarity_test(data, name="Data"):
         'Critical 5%': round(result[4]['5%'], 4),
         'Critical 10%': round(result[4]['10%'], 4),
     }
+
+# ============================================================
+# INTERACTIVE RESULTS VISUALIZATIONS (Plotly)
+# ============================================================
+
+def create_interactive_results_dashboard_exp1(results_df, experiment_label, save_dir='figures'):
+    """
+    Create interactive results dashboard for Experiment 1 (same-stock).
+    
+    Expected columns: Stock, Model, MSE, RMSE, MAE, MAPE (%), R2
+    """
+    os.makedirs(save_dir, exist_ok=True)
+    
+    # Create subplots
+    fig = make_subplots(
+        rows=2, cols=3,
+        subplot_titles=('RMSE by Stock', 'MAE by Stock', 'R² Score by Stock',
+                        'RMSE by Model', 'MAE by Model', 'R² Score by Model'),
+        specs=[[{"type": "box"}, {"type": "box"}, {"type": "box"}],
+               [{"type": "bar"}, {"type": "bar"}, {"type": "bar"}]]
+    )
+    
+    # Box plots by stock (RMSE, MAE, R²)
+    for stock in STOCKS:
+        stock_data = results_df[results_df['Stock'] == stock]
+        fig.add_trace(
+            go.Box(y=stock_data['RMSE'], name=stock, marker_color=STOCK_COLORS.get(stock, '#999')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Box(y=stock_data['MAE'], name=stock, marker_color=STOCK_COLORS.get(stock, '#999'), showlegend=False),
+            row=1, col=2
+        )
+        fig.add_trace(
+            go.Box(y=stock_data['R2'], name=stock, marker_color=STOCK_COLORS.get(stock, '#999'), showlegend=False),
+            row=1, col=3
+        )
+    
+    # Bar plots by model
+    rmse_by_model = results_df.groupby('Model')['RMSE'].mean()
+    mae_by_model = results_df.groupby('Model')['MAE'].mean()
+    r2_by_model = results_df.groupby('Model')['R2'].mean()
+    
+    fig.add_trace(
+        go.Bar(x=rmse_by_model.index, y=rmse_by_model.values, name='RMSE', 
+               marker_color='#0072B2', showlegend=False),
+        row=2, col=1
+    )
+    fig.add_trace(
+        go.Bar(x=mae_by_model.index, y=mae_by_model.values, name='MAE',
+               marker_color='#D55E00', showlegend=False),
+        row=2, col=2
+    )
+    fig.add_trace(
+        go.Bar(x=r2_by_model.index, y=r2_by_model.values, name='R²',
+               marker_color='#009E73', showlegend=False),
+        row=2, col=3
+    )
+    
+    fig.update_yaxes(title_text="RMSE", row=1, col=1)
+    fig.update_yaxes(title_text="MAE", row=1, col=2)
+    fig.update_yaxes(title_text="R² Score", row=1, col=3)
+    fig.update_yaxes(title_text="Avg RMSE", row=2, col=1)
+    fig.update_yaxes(title_text="Avg MAE", row=2, col=2)
+    fig.update_yaxes(title_text="Avg R²", row=2, col=3)
+    
+    fig.update_layout(
+        title=f"<b>{experiment_label} - Results Dashboard</b>",
+        height=800,
+        showlegend=True,
+        template='plotly_white',
+        font=dict(size=10)
+    )
+    
+    html_file = f'{save_dir}/{experiment_label}_results_dashboard.html'
+    fig.write_html(html_file)
+    return fig, html_file
+
+def create_interactive_metrics_heatmap_exp1(results_df, metric, experiment_label, save_dir='figures'):
+    """
+    Create interactive heatmap for Experiment 1 (Stock vs Model).
+    """
+    os.makedirs(save_dir, exist_ok=True)
+    
+    pivot_data = results_df.pivot_table(values=metric, index='Stock', columns='Model', aggfunc='mean')
+    
+    fig = go.Figure(data=go.Heatmap(
+        z=pivot_data.values,
+        x=pivot_data.columns,
+        y=pivot_data.index,
+        colorscale='RdYlGn_r' if metric in ['RMSE', 'MAE', 'MSE', 'MAPE (%)'] else 'RdYlGn',
+        text=np.round(pivot_data.values, 4),
+        texttemplate='%{text:.4f}',
+        textfont={"size": 12},
+        hovertemplate='Stock: %{y}<br>Model: %{x}<br>' + metric + ': %{z:.4f}<extra></extra>',
+        colorbar=dict(title=metric)
+    ))
+    
+    fig.update_layout(
+        title=f"<b>{experiment_label} - {metric} by Stock and Model</b>",
+        xaxis_title="Model",
+        yaxis_title="Stock",
+        height=500,
+        template='plotly_white',
+        font=dict(size=12)
+    )
+    
+    html_file = f'{save_dir}/{experiment_label}_{metric}_heatmap_interactive.html'
+    fig.write_html(html_file)
+    return fig, html_file
+
+def create_interactive_results_dashboard_exp2(results_df, experiment_label, save_dir='figures'):
+    """
+    Create interactive results dashboard for Experiment 2 (cross-stock).
+    
+    Expected columns: Train_Stock, Test_Stock, Model, MSE, RMSE, MAE, MAPE (%), R2
+    """
+    os.makedirs(save_dir, exist_ok=True)
+    
+    # Create scatter plots
+    fig = make_subplots(
+        rows=2, cols=2,
+        subplot_titles=('RMSE vs MAE', 'R² vs RMSE', 'Model Performance (RMSE)', 'Model Performance (R²)'),
+        specs=[[{"type": "scatter"}, {"type": "scatter"}],
+               [{"type": "bar"}, {"type": "bar"}]]
+    )
+    
+    # Scatter plot: RMSE vs MAE (colored by model)
+    for model in MODEL_TYPES:
+        model_data = results_df[results_df['Model'] == model]
+        fig.add_trace(
+            go.Scatter(x=model_data['MAE'], y=model_data['RMSE'], 
+                       mode='markers', name=model, 
+                       marker=dict(size=10, color=MODEL_COLORS.get(model, '#999')),
+                       hovertemplate=f'<b>{model}</b><br>MAE: %{{x:.4f}}<br>RMSE: %{{y:.4f}}<extra></extra>'),
+            row=1, col=1
+        )
+    
+    # Scatter plot: R² vs RMSE
+    for model in MODEL_TYPES:
+        model_data = results_df[results_df['Model'] == model]
+        fig.add_trace(
+            go.Scatter(x=model_data['RMSE'], y=model_data['R2'],
+                       mode='markers', name=model, showlegend=False,
+                       marker=dict(size=10, color=MODEL_COLORS.get(model, '#999')),
+                       hovertemplate=f'<b>{model}</b><br>RMSE: %{{x:.4f}}<br>R²: %{{y:.6f}}<extra></extra>'),
+            row=1, col=2
+        )
+    
+    # Bar plots: Average metrics by model
+    avg_rmse = results_df.groupby('Model')['RMSE'].mean()
+    avg_r2 = results_df.groupby('Model')['R2'].mean()
+    
+    fig.add_trace(
+        go.Bar(x=avg_rmse.index, y=avg_rmse.values, name='RMSE', 
+               marker_color=[MODEL_COLORS.get(m, '#999') for m in avg_rmse.index],
+               showlegend=False, hovertemplate='Model: %{x}<br>Avg RMSE: %{y:.4f}<extra></extra>'),
+        row=2, col=1
+    )
+    fig.add_trace(
+        go.Bar(x=avg_r2.index, y=avg_r2.values, name='R²',
+               marker_color=[MODEL_COLORS.get(m, '#999') for m in avg_r2.index],
+               showlegend=False, hovertemplate='Model: %{x}<br>Avg R²: %{y:.6f}<extra></extra>'),
+        row=2, col=2
+    )
+    
+    fig.update_xaxes(title_text="MAE", row=1, col=1)
+    fig.update_yaxes(title_text="RMSE", row=1, col=1)
+    fig.update_xaxes(title_text="RMSE", row=1, col=2)
+    fig.update_yaxes(title_text="R² Score", row=1, col=2)
+    fig.update_yaxes(title_text="Average RMSE", row=2, col=1)
+    fig.update_yaxes(title_text="Average R²", row=2, col=2)
+    
+    fig.update_layout(
+        title=f"<b>{experiment_label} - Cross-Stock Results Dashboard</b>",
+        height=800,
+        template='plotly_white',
+        font=dict(size=11),
+        showlegend=True
+    )
+    
+    html_file = f'{save_dir}/{experiment_label}_crossstock_dashboard.html'
+    fig.write_html(html_file)
+    return fig, html_file
+
+def create_interactive_transfer_matrix(results_df, metric, experiment_label, save_dir='figures'):
+    """
+    Create interactive transfer learning matrix heatmap for Experiment 2.
+    Rows: Train Stock, Columns: Test Stock
+    """
+    os.makedirs(save_dir, exist_ok=True)
+    
+    # For each model, create a separate heatmap
+    for model in MODEL_TYPES:
+        model_data = results_df[results_df['Model'] == model]
+        pivot = model_data.pivot_table(values=metric, index='Train_Stock', 
+                                       columns='Test_Stock', aggfunc='mean')
+        
+        fig = go.Figure(data=go.Heatmap(
+            z=pivot.values,
+            x=pivot.columns,
+            y=pivot.index,
+            colorscale='RdYlGn_r' if metric in ['RMSE', 'MAE', 'MSE'] else 'RdYlGn',
+            text=np.round(pivot.values, 4),
+            texttemplate='%{text:.4f}',
+            textfont={"size": 12},
+            hovertemplate='Train: %{y}<br>Test: %{x}<br>' + metric + ': %{z:.4f}<extra></extra>',
+            colorbar=dict(title=metric)
+        ))
+        
+        fig.update_layout(
+            title=f"<b>{experiment_label} - {model} Transfer Learning Matrix ({metric})</b>",
+            xaxis_title="Test Stock",
+            yaxis_title="Train Stock",
+            height=500,
+            template='plotly_white',
+            font=dict(size=12)
+        )
+        
+        html_file = f'{save_dir}/{experiment_label}_{model}_transfer_matrix_{metric}.html'
+        fig.write_html(html_file)
+
+def create_interactive_metrics_comparison(results_df, experiment_label, save_dir='figures', metrics=['RMSE', 'MAE', 'R2']):
+    """
+    Create interactive comparison of multiple metrics.
+    """
+    os.makedirs(save_dir, exist_ok=True)
+    
+    fig = go.Figure()
+    
+    for i, metric in enumerate(metrics):
+        if metric not in results_df.columns:
+            continue
+        
+        by_model = results_df.groupby('Model')[metric].mean().sort_values()
+        
+        fig.add_trace(go.Bar(
+            x=by_model.index, y=by_model.values,
+            name=metric,
+            marker_color=['#0072B2', '#D55E00', '#009E73', '#CC79A7'][i % 4],
+            text=np.round(by_model.values, 4),
+            textposition='outside',
+            hovertemplate='Model: %{x}<br>' + metric + ': %{y:.4f}<extra></extra>'
+        ))
+    
+    fig.update_layout(
+        title=f"<b>{experiment_label} - Metrics Comparison by Model</b>",
+        xaxis_title="Model",
+        yaxis_title="Metric Value",
+        barmode='group',
+        height=600,
+        template='plotly_white',
+        font=dict(size=12),
+        legend=dict(x=0.99, y=0.99, xanchor='right', yanchor='top')
+    )
+    
+    html_file = f'{save_dir}/{experiment_label}_metrics_comparison.html'
+    fig.write_html(html_file)
+    return fig, html_file
+
+def create_interactive_model_radar_chart(results_df, experiment_label, save_dir='figures'):
+    """
+    Create radar chart comparing model performance across metrics.
+    """
+    os.makedirs(save_dir, exist_ok=True)
+    
+    fig = go.Figure()
+    
+    # Normalize metrics for radar chart (0-100 scale, where higher is better)
+    for model in MODEL_TYPES:
+        model_data = results_df[results_df['Model'] == model]
+        
+        # Calculate normalized metrics (invert RMSE and MAE so higher is better)
+        rmse_norm = max(0, 100 - (model_data['RMSE'].mean() / results_df['RMSE'].max() * 100))
+        mae_norm = max(0, 100 - (model_data['MAE'].mean() / results_df['MAE'].max() * 100))
+        r2_norm = model_data['R2'].mean() * 100
+        mape_norm = max(0, 100 - (model_data.get('MAPE (%)', pd.Series([0])).mean() or 0))
+        
+        fig.add_trace(go.Scatterpolar(
+            r=[rmse_norm, mae_norm, r2_norm, mape_norm],
+            theta=['RMSE\n(Lower Better)', 'MAE\n(Lower Better)', 'R²\n(Higher Better)', 'MAPE\n(Lower Better)'],
+            fill='toself',
+            name=model,
+            line_color=MODEL_COLORS.get(model, '#999')
+        ))
+    
+    fig.update_layout(
+        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+        title=f"<b>{experiment_label} - Model Performance Radar</b>",
+        height=700,
+        font=dict(size=11),
+        template='plotly_white'
+    )
+    
+    html_file = f'{save_dir}/{experiment_label}_model_radar.html'
+    fig.write_html(html_file)
+    return fig, html_file
 
 print("stock_prediction_utils.py loaded successfully!")
 print(f"  ProportionScaler max value: {PROPORTION_SCALER_MAX}")
