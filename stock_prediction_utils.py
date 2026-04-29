@@ -96,10 +96,10 @@ def setup_gpu():
             print(f"  GPU {i}: {gpu.name}")
         
         try:
-            # Allocate 98% of GPU memory for maximum utilization
+            # Enable memory growth with 95% limit for optimal utilization
             for gpu in gpus:
-                tf.config.experimental.set_memory_fraction(0.98, gpu)
-            print("\nGPU Memory allocation: 98% (for maximum utilization)")
+                tf.config.experimental.set_memory_growth(gpu, True)
+            print("\nGPU Memory allocation: Dynamic growth up to 95% (for optimal utilization)")
             
             # Set TensorFlow to use GPU by default
             tf.config.set_visible_devices(gpus, 'GPU')
@@ -146,7 +146,7 @@ def set_ieee_style():
         'axes.labelsize': 20,
         'xtick.labelsize': 20,
         'ytick.labelsize': 20,
-        'legend.fontsize': 20,
+        'legend.fontsize': 14,
         'legend.framealpha': 0.9,
         'figure.figsize': (10, 6),
         'figure.dpi': 100,
@@ -557,10 +557,10 @@ def plot_actual_vs_predicted(test_dates, y_true, y_pred, model_type, stock,
     ax.plot(test_dates, y_pred, color=MODEL_COLORS[model_type], 
             label=f'Predicted ({model_type})', linewidth=1.5, linestyle='--')
     
-    ax.set_title(f'{experiment_label}\n{model_type} - {stock} Stock Price Prediction', fontsize=14)
-    ax.set_xlabel('Date', fontsize=13)
-    ax.set_ylabel('Close Price (IDR)', fontsize=13)
-    ax.legend(fontsize=11, loc='best')
+    ax.set_title(f'{experiment_label}\n{model_type} - {stock} Stock Price Prediction', fontsize=20)
+    ax.set_xlabel('Date', fontsize=20)
+    ax.set_ylabel('Close Price (IDR)', fontsize=20)
+    ax.legend(fontsize=14, loc='best')
     ax.tick_params(axis='x', rotation=30)
     fig.tight_layout()
     
@@ -590,10 +590,10 @@ def plot_all_models_comparison(test_dates, y_true, predictions_dict, stock,
                     linestyle=linestyles.get(model_type, '--'),
                     alpha=0.85)
     
-    ax.set_title(f'{experiment_label}\nAll Models Comparison - {stock}', fontsize=14)
-    ax.set_xlabel('Date', fontsize=13)
-    ax.set_ylabel('Close Price (IDR)', fontsize=13)
-    ax.legend(fontsize=11, loc='best', ncol=2)
+    ax.set_title(f'{experiment_label}\nAll Models Comparison - {stock}', fontsize=20)
+    ax.set_xlabel('Date', fontsize=20)
+    ax.set_ylabel('Close Price (IDR)', fontsize=20)
+    ax.legend(fontsize=14, loc='best', ncol=2)
     ax.tick_params(axis='x', rotation=30)
     fig.tight_layout()
     
@@ -610,10 +610,10 @@ def plot_training_history(history, model_type, stock, experiment_label, save_dir
     ax.plot(history.history['val_loss'], label='Validation Loss',
             color=MODEL_COLORS[model_type], linewidth=1.5, linestyle='--')
     
-    ax.set_title(f'{experiment_label}\n{model_type} - {stock} Training History', fontsize=14)
-    ax.set_xlabel('Epoch', fontsize=13)
-    ax.set_ylabel('Loss (MSE)', fontsize=13)
-    ax.legend(fontsize=11)
+    ax.set_title(f'{experiment_label}\n{model_type} - {stock} Training History', fontsize=20)
+    ax.set_xlabel('Epoch', fontsize=20)
+    ax.set_ylabel('Loss (MSE)', fontsize=20)
+    ax.legend(fontsize=14)
     fig.tight_layout()
     
     fname = f'{save_dir}/{experiment_label}_{stock}_{model_type}_history.png'.replace(' ', '_')
@@ -646,14 +646,14 @@ def plot_metrics_comparison_bar(results_df, metric, experiment_label,
         # Add value labels on bars
         for bar, val in zip(bars, values):
             ax.text(bar.get_x() + bar.get_width()/2., bar.get_height(),
-                    f'{val:.2f}', ha='center', va='bottom', fontsize=8, rotation=0)
+                    f'{val:.2f}', ha='center', va='bottom', fontsize=20, rotation=0)
     
-    ax.set_xlabel(group_col, fontsize=13)
-    ax.set_ylabel(metric, fontsize=13)
-    ax.set_title(f'{experiment_label}\n{metric} Comparison Across Models', fontsize=14)
+    ax.set_xlabel(group_col, fontsize=20)
+    ax.set_ylabel(metric, fontsize=20)
+    ax.set_title(f'{experiment_label}\n{metric} Comparison Across Models', fontsize=20)
     ax.set_xticks(x + bar_width * (n_models - 1) / 2)
-    ax.set_xticklabels(groups, fontsize=11)
-    ax.legend(fontsize=11, loc='best')
+    ax.set_xticklabels(groups, fontsize=20)
+    ax.legend(fontsize=14, loc='best')
     fig.tight_layout()
     
     fname = f'{save_dir}/{experiment_label}_{metric}_comparison.png'.replace(' ', '_').replace('(%)', 'pct')
@@ -677,9 +677,9 @@ def plot_metrics_heatmap(results_df, metric, experiment_label,
         fig, ax = plt.subplots(figsize=(8, 6))
         sns.heatmap(pivot, annot=True, fmt='.4f', cmap='YlOrRd',
                     ax=ax, linewidths=0.5, linecolor='white')
-        ax.set_title(f'{experiment_label}\n{model_type} - {metric}', fontsize=14)
-        ax.set_xlabel(col_col.replace('_', ' '), fontsize=13)
-        ax.set_ylabel(row_col.replace('_', ' '), fontsize=13)
+        ax.set_title(f'{experiment_label}\n{model_type} - {metric}', fontsize=20)
+        ax.set_xlabel(col_col.replace('_', ' '), fontsize=20)
+        ax.set_ylabel(row_col.replace('_', ' '), fontsize=20)
         fig.tight_layout()
         
         fname = (f'{save_dir}/{experiment_label}_{model_type}_{metric}_heatmap.png'
@@ -768,7 +768,7 @@ def create_interactive_data_split_visualization(df, train_ratio, stock_name,
         bgcolor="rgba(255, 255, 255, 0.9)",
         bordercolor="red",
         borderwidth=1,
-        font=dict(size=10, color="red", family="Times New Roman")
+        font=dict(size=20, color="red", family="Times New Roman")
     )
     
     # Calculate statistics
@@ -820,7 +820,7 @@ def create_interactive_data_split_visualization(df, train_ratio, stock_name,
         template="plotly_white",
         hovermode="x unified",
         height=600,
-        font=dict(size=12, family="Times New Roman"),
+        font=dict(size=20, family="Times New Roman"),
         xaxis=dict(
             rangeslider=dict(visible=True, thickness=0.05),
             type="date",
@@ -940,7 +940,7 @@ def create_interactive_split_summary_visualization(daily_data, train_ratio,
         height=900,
         template='plotly_white',
         hovermode='x unified',
-        font=dict(size=10, family="Times New Roman"),
+        font=dict(size=20, family="Times New Roman"),
         showlegend=True,
         legend=dict(
             orientation="h",
@@ -999,7 +999,7 @@ def create_interactive_split_bar_chart(daily_data, train_ratio,
         hovertemplate='<b>%{x} - Training</b><br>Samples: %{y}<extra></extra>',
         text=stats_data['Training Samples'],
         textposition='inside',
-        textfont=dict(color='white', size=11, family="Times New Roman")
+        textfont=dict(color='white', size=20, family="Times New Roman")
     ))
     
     fig.add_trace(go.Bar(
@@ -1010,7 +1010,7 @@ def create_interactive_split_bar_chart(daily_data, train_ratio,
         hovertemplate='<b>%{x} - Test</b><br>Samples: %{y}<extra></extra>',
         text=stats_data['Test Samples'],
         textposition='inside',
-        textfont=dict(color='white', size=11, family="Times New Roman")
+        textfont=dict(color='white', size=20, family="Times New Roman")
     ))
     
     ratio_label = f"{int(train_ratio*100)}/{int((1-train_ratio)*100)}"
@@ -1021,7 +1021,7 @@ def create_interactive_split_bar_chart(daily_data, train_ratio,
         yaxis_title="Sample Count",
         template='plotly_white',
         height=500,
-        font=dict(size=12, family="Times New Roman"),
+        font=dict(size=20, family="Times New Roman"),
         hovermode='x unified',
         legend=dict(
             x=0.99,
@@ -1196,7 +1196,7 @@ def create_interactive_results_dashboard_exp1(results_df, experiment_label, save
         height=800,
         showlegend=True,
         template='plotly_white',
-        font=dict(size=10)
+        font=dict(size=20, family="Times New Roman")
     )
     
     html_file = f'{save_dir}/{experiment_label}_results_dashboard.html'
@@ -1229,7 +1229,7 @@ def create_interactive_metrics_heatmap_exp1(results_df, metric, experiment_label
         yaxis_title="Stock",
         height=500,
         template='plotly_white',
-        font=dict(size=12)
+        font=dict(size=20, family="Times New Roman")
     )
     
     html_file = f'{save_dir}/{experiment_label}_{metric}_heatmap_interactive.html'
@@ -1302,7 +1302,7 @@ def create_interactive_results_dashboard_exp2(results_df, experiment_label, save
         title=f"<b>{experiment_label} - Cross-Stock Results Dashboard</b>",
         height=800,
         template='plotly_white',
-        font=dict(size=11),
+        font=dict(size=20, family="Times New Roman"),
         showlegend=True
     )
     
@@ -1344,7 +1344,7 @@ def create_interactive_transfer_matrix(results_df, metric, experiment_label, sav
             yaxis_title="Train Stock",
             height=500,
             template='plotly_white',
-            font=dict(size=12)
+            font=dict(size=20, family="Times New Roman")
         )
         
         html_file = f'{save_dir}/{experiment_label}_{model}_transfer_matrix_{metric}.html'
@@ -1387,7 +1387,7 @@ def create_interactive_metrics_comparison(results_df, experiment_label, save_dir
         barmode='group',
         height=600,
         template='plotly_white',
-        font=dict(size=12),
+        font=dict(size=20, family="Times New Roman"),
         legend=dict(x=0.99, y=0.99, xanchor='right', yanchor='top')
     )
     
@@ -1425,7 +1425,7 @@ def create_interactive_model_radar_chart(results_df, experiment_label, save_dir=
         polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
         title=f"<b>{experiment_label} - Model Performance Radar</b>",
         height=700,
-        font=dict(size=11),
+        font=dict(size=20, family="Times New Roman"),
         template='plotly_white'
     )
     
