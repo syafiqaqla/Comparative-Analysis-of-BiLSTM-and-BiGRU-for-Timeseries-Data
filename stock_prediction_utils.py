@@ -81,6 +81,7 @@ def setup_gpu():
     """
     Configure TensorFlow to use GPU (CUDA) if available.
     Falls back to CPU if GPU is not available.
+    Allocates 98% of GPU memory for maximum utilization.
     """
     # Check for GPU availability
     gpus = tf.config.list_physical_devices('GPU')
@@ -95,10 +96,10 @@ def setup_gpu():
             print(f"  GPU {i}: {gpu.name}")
         
         try:
-            # Enable memory growth to avoid OOM errors
+            # Allocate 98% of GPU memory for maximum utilization
             for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
-            print("\nMemory growth enabled (dynamic allocation)")
+                tf.config.experimental.set_memory_fraction(0.98, gpu)
+            print("\nGPU Memory allocation: 98% (for maximum utilization)")
             
             # Set TensorFlow to use GPU by default
             tf.config.set_visible_devices(gpus, 'GPU')
@@ -538,7 +539,7 @@ def train_and_evaluate(model_type, X_train, y_train, X_test, y_test,
 # ============================================================
 # VISUALIZATION FUNCTIONS
 # ============================================================
-def save_fig(fig, filepath, dpi=600):
+def save_fig(fig, filepath, dpi=150):
     """Save figure at publication quality."""
     os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
     fig.savefig(filepath, dpi=dpi, bbox_inches='tight', pad_inches=0.1,
