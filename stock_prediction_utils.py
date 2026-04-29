@@ -149,7 +149,7 @@ def set_ieee_style():
         'legend.framealpha': 0.9,
         'figure.figsize': (10, 6),
         'figure.dpi': 100,
-        'savefig.dpi': 600,
+        'savefig.dpi': 150,
         'savefig.bbox': 'tight',
         'savefig.pad_inches': 0.1,
         'font.family': 'serif',
@@ -767,7 +767,7 @@ def create_interactive_data_split_visualization(df, train_ratio, stock_name,
         bgcolor="rgba(255, 255, 255, 0.9)",
         bordercolor="red",
         borderwidth=1,
-        font=dict(size=20, color="red", family="Times New Roman")
+        font=dict(size=10, color="red", family="Times New Roman")
     )
     
     # Calculate statistics
@@ -805,7 +805,7 @@ def create_interactive_data_split_visualization(df, train_ratio, stock_name,
         bgcolor="white",
         bordercolor="gray",
         borderwidth=1,
-        font=dict(size=20, family="Times New Roman"),
+        font=dict(size=11, family="Times New Roman"),
         align="left",
         xanchor="left",
         yanchor="top"
@@ -819,7 +819,7 @@ def create_interactive_data_split_visualization(df, train_ratio, stock_name,
         template="plotly_white",
         hovermode="x unified",
         height=600,
-        font=dict(size=20, family="Times New Roman"),
+        font=dict(size=12, family="Times New Roman"),
         xaxis=dict(
             rangeslider=dict(visible=True, thickness=0.05),
             type="date",
@@ -939,7 +939,7 @@ def create_interactive_split_summary_visualization(daily_data, train_ratio,
         height=900,
         template='plotly_white',
         hovermode='x unified',
-        font=dict(size=20, family="Times New Roman"),
+        font=dict(size=10, family="Times New Roman"),
         showlegend=True,
         legend=dict(
             orientation="h",
@@ -998,7 +998,7 @@ def create_interactive_split_bar_chart(daily_data, train_ratio,
         hovertemplate='<b>%{x} - Training</b><br>Samples: %{y}<extra></extra>',
         text=stats_data['Training Samples'],
         textposition='inside',
-        textfont=dict(color='white', size=20, family="Times New Roman")
+        textfont=dict(color='white', size=11, family="Times New Roman")
     ))
     
     fig.add_trace(go.Bar(
@@ -1009,7 +1009,7 @@ def create_interactive_split_bar_chart(daily_data, train_ratio,
         hovertemplate='<b>%{x} - Test</b><br>Samples: %{y}<extra></extra>',
         text=stats_data['Test Samples'],
         textposition='inside',
-        textfont=dict(color='white', size=20, family="Times New Roman")
+        textfont=dict(color='white', size=11, family="Times New Roman")
     ))
     
     ratio_label = f"{int(train_ratio*100)}/{int((1-train_ratio)*100)}"
@@ -1020,7 +1020,7 @@ def create_interactive_split_bar_chart(daily_data, train_ratio,
         yaxis_title="Sample Count",
         template='plotly_white',
         height=500,
-        font=dict(size=20, family="Times New Roman"),
+        font=dict(size=12, family="Times New Roman"),
         hovermode='x unified',
         legend=dict(
             x=0.99,
