@@ -1433,6 +1433,195 @@ def create_interactive_model_radar_chart(results_df, experiment_label, save_dir=
     fig.write_html(html_file)
     return fig, html_file
 
+def create_interactive_actual_vs_predicted_exp4(test_dates, y_true, predictions_dict, 
+                                                 train_label, target_stock,
+                                                 experiment_label, save_dir='figures'):
+    """
+    Create interactive actual vs predicted comparison for Experiment 4.
+    Actual in RED (#FF0000), predictions in model colors.
+    
+    predictions_dict: {model_type: y_pred_array}
+    """
+    os.makedirs(save_dir, exist_ok=True)
+    
+    fig = go.Figure()
+    
+    # Add actual values in RED first (so it appears on top in legend)
+    fig.add_trace(go.Scatter(
+        x=test_dates, y=y_true,
+        name='Actual Price',
+        mode='lines',
+        line=dict(color='#FF0000', width=3),
+        hovertemplate='<b>ACTUAL</b><br>Date: %{x|%Y-%m-%d}<br>Price: IDR %{y:,.2f}<extra></extra>',
+        opacity=0.9
+    ))
+    
+    # Add predictions for each model
+    linestyles = {'BiLSTM': 'solid', 'BiGRU': 'dash', 'LSTM': 'dot', 'GRU': 'dashdot'}
+    
+    for model_type in MODEL_TYPES:
+        if model_type in predictions_dict:
+            fig.add_trace(go.Scatter(
+                x=test_dates, y=predictions_dict[model_type],
+                name=f'{model_type} (Predicted)',
+                mode='lines',
+                line=dict(
+                    color=MODEL_COLORS.get(model_type, '#999'),
+                    width=2.5,
+                    dash=linestyles.get(model_type, 'solid')
+                ),
+                hovertemplate=f'<b>{model_type}</b><br>Date: %{{x|%Y-%m-%d}}<br>Price: IDR %{{y:,.2f}}<extra></extra>',
+                opacity=0.85
+            ))
+    
+    fig.update_layout(
+        title=f"<b>{experiment_label}</b><br>Train: {train_label} → Target: {target_stock}<br>Actual vs Predicted Stock Prices",
+        xaxis_title="Date",
+        yaxis_title="Close Price (IDR)",
+        template='plotly_white',
+        hovermode='x unified',
+        height=700,
+        font=dict(size=20, family="Times New Roman"),
+        xaxis=dict(
+            gridwidth=1,
+            gridcolor='lightgray'
+        ),
+        yaxis=dict(
+            gridwidth=1,
+            gridcolor='lightgray'
+        ),
+        legend=dict(
+            x=0.01,
+            y=0.99,
+            xanchor="left",
+            yanchor="top",
+            bgcolor="rgba(255, 255, 255, 0.9)",
+            bordercolor="gray",
+            borderwidth=1,
+            font=dict(size=18, family="Times New Roman")
+        )
+    )
+    
+    fname = f'{save_dir}/{experiment_label}_Train_{train_label}_Target_{target_stock}_actual_vs_predicted.html'
+    fig.write_html(fname)
+    
+    return fig, fname
+
+def create_interactive_experiment4_dashboard(all_predictions, results_df, experiment_label, save_dir='figures'):
+    """
+    Create comprehensive interactive dashboard for Experiment 4.
+    Shows all actual vs predicted plots in a gallery format.
+    
+    all_predictions: {(train_label, target_stock): {model_type: (y_true, y_pred, test_dates)}}
+    """
+    os.makedirs(save_dir, exist_ok=True)
+    
+    # Create main dashboard with metrics heatmap
+    metrics_data = []
+    
+    for metric in ['RMSE', 'MAE', 'R2']:
+        # Create a figure for each metric
+        fig = go.Figure()
+        
+        # Create heatmap data
+        models = MODEL_TYPES
+        targets = STOCKS
+        
+        heatmap_vals = np.zeros((len(models), len(targets)))
+        
+        for i, model in enumerate(models):
+            for j, target in enumerate(targets):
+                model_target_data = results_df[
+                    (results_df['Model'] == model) & 
+                    (results_df['Target_Stock'] == target)
+                ]
+                if not model_target_data.empty:
+                    heatmap_vals[i, j] = model_target_data[metric].mean()
+        
+        colorscale = 'RdYlGn_r' if metric in ['RMSE', 'MAE', 'MSE'] else 'RdYlGn'
+        
+        fig.add_trace(go.Heatmap(
+            z=heatmap_vals,
+            x=targets,
+            y=models,
+            colorscale=colorscale,
+            text=np.round(heatmap_vals, 4),
+            texttemplate='%{text:.4f}',
+            textfont={"size": 14, "family": "Times New Roman"},
+            hovertemplate='Model: %{y}<br>Target: %{x}<br>' + metric + ': %{z:.4f}<extra></extra>',
+            colorbar=dict(title=metric, titlefont=dict(size=18), tickfont=dict(size=14))
+        ))
+        
+        fig.update_layout(
+            title=f"<b>{experiment_label} - {metric} by Target Stock and Model</b>",
+            xaxis_title="Target Stock",
+            yaxis_title="Model",
+            height=500,
+            width=800,
+            template='plotly_white',
+            font=dict(size=20, family="Times New Roman"),
+            xaxis=dict(tickfont=dict(size=18)),
+            yaxis=dict(tickfont=dict(size=18))
+        )
+        
+        html_file = f'{save_dir}/{experiment_label}_{metric}_heatmap_by_target.html'
+        fig.write_html(html_file)
+        print(f"  ✓ Saved: {html_file}")
+
+def create_interactive_model_comparison_by_target(results_df, target_stock, experiment_label, save_dir='figures'):
+    """
+    Create interactive comparison of all models for a specific target stock.
+    """
+    os.makedirs(save_dir, exist_ok=True)
+    
+    target_data = results_df[results_df['Target_Stock'] == target_stock]
+    
+    if target_data.empty:
+        return None, None
+    
+    fig = make_subplots(
+        rows=2, cols=2,
+        subplot_titles=('RMSE by Model', 'MAE by Model', 'R² Score by Model', 'MAPE by Model'),
+        specs=[[{"type": "bar"}, {"type": "bar"}],
+               [{"type": "bar"}, {"type": "bar"}]]
+    )
+    
+    metrics = ['RMSE', 'MAE', 'R2', 'MAPE (%)']
+    positions = [(1, 1), (1, 2), (2, 1), (2, 2)]
+    
+    for metric, (row, col) in zip(metrics, positions):
+        if metric in target_data.columns:
+            by_model = target_data.groupby('Model')[metric].mean().reindex(MODEL_TYPES)
+            colors = [MODEL_COLORS.get(m, '#999') for m in MODEL_TYPES]
+            
+            fig.add_trace(
+                go.Bar(
+                    x=MODEL_TYPES, y=by_model.values,
+                    name=metric,
+                    marker_color=colors,
+                    text=np.round(by_model.values, 4),
+                    textposition='outside',
+                    hovertemplate='Model: %{x}<br>' + metric + ': %{y:.4f}<extra></extra>',
+                    showlegend=False
+                ),
+                row=row, col=col
+            )
+            
+            fig.update_yaxes(title_text=metric, row=row, col=col)
+    
+    fig.update_layout(
+        title=f"<b>{experiment_label} - Model Performance for Target Stock: {target_stock}</b>",
+        height=900,
+        showlegend=False,
+        template='plotly_white',
+        font=dict(size=20, family="Times New Roman")
+    )
+    
+    html_file = f'{save_dir}/{experiment_label}_Target_{target_stock}_model_comparison.html'
+    fig.write_html(html_file)
+    
+    return fig, html_file
+
 print("stock_prediction_utils.py loaded successfully!")
 print(f"  ProportionScaler max value: {PROPORTION_SCALER_MAX}")
 print(f"  Lookback: {LOOKBACK}, Epochs: {EPOCHS}, Batch size: {BATCH_SIZE}")

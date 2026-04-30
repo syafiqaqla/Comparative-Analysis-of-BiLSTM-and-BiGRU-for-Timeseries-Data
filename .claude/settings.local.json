@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk '{print $5, $9}')",
+      "Bash(python -c ' *)",
+      "Bash(python)",
+      "Bash(python _sync_notebooks.py)"
+    ]
+  }
+}
