@@ -1549,7 +1549,7 @@ def create_interactive_experiment4_dashboard(all_predictions, results_df, experi
             texttemplate='%{text:.4f}',
             textfont={"size": 14, "family": "Times New Roman"},
             hovertemplate='Model: %{y}<br>Target: %{x}<br>' + metric + ': %{z:.4f}<extra></extra>',
-            colorbar=dict(title=metric, titlefont=dict(size=18), tickfont=dict(size=14))
+            colorbar=dict(title=dict(text=metric, font=dict(size=18)), tickfont=dict(size=14))
         ))
         
         fig.update_layout(
