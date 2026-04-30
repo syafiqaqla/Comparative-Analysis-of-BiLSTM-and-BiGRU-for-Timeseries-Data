@@ -1619,8 +1619,199 @@ def create_interactive_model_comparison_by_target(results_df, target_stock, expe
     
     html_file = f'{save_dir}/{experiment_label}_Target_{target_stock}_model_comparison.html'
     fig.write_html(html_file)
-    
+
     return fig, html_file
+
+
+def create_case_by_case_actual_vs_predicted(cases_dict, experiment_title,
+                                            experiment_label, save_dir='figures'):
+    """
+    Generic interactive case-by-case Actual vs Predicted Plotly figure.
+
+    A single HTML file with a top dropdown that walks through every test case
+    defined in ``cases_dict``. For the active case it renders the Actual price
+    (RED #FF0000) plus all model predictions in their model colors, and shows
+    a metrics panel (MSE / RMSE / MAE / MAPE / R²) on the right.
+
+    Args:
+        cases_dict: ordered mapping {case_label: {
+            'description': str,                # subtitle for the case
+            'dates'      : 1-D array,
+            'y_true'     : 1-D array,
+            'predictions': {model_type: 1-D array},
+            'metrics'    : {model_type: {'MSE','RMSE','MAE','MAPE (%)','R2'}}
+        }}
+        experiment_title: e.g. "Experiment 1: Same-Stock Prediction (80/20)"
+        experiment_label: e.g. "Exp1_80_20" (used for the output filename)
+        save_dir: directory to write the HTML into.
+
+    Returns:
+        (fig, html_file_path)
+    """
+    import plotly.graph_objects as go
+    os.makedirs(save_dir, exist_ok=True)
+
+    case_labels = list(cases_dict.keys())
+    if not case_labels:
+        return None, None
+
+    linestyles = {'BiLSTM': 'solid', 'BiGRU': 'dash', 'LSTM': 'dot', 'GRU': 'dashdot'}
+
+    fig = go.Figure()
+    trace_owner = []  # case index per trace, used to build dropdown visibility masks
+
+    for case_idx, case_label in enumerate(case_labels):
+        case = cases_dict[case_label]
+        is_first = (case_idx == 0)
+
+        # Actual price (red)
+        fig.add_trace(go.Scatter(
+            x=case['dates'], y=case['y_true'],
+            name='Actual Price',
+            mode='lines',
+            line=dict(color='#FF0000', width=3),
+            hovertemplate='<b>ACTUAL PRICE</b><br>Date: %{x|%Y-%m-%d}<br>'
+                          'Price: IDR %{y:,.2f}<extra></extra>',
+            visible=is_first,
+            opacity=0.95,
+            legendgroup='actual',
+            showlegend=True,
+        ))
+        trace_owner.append(case_idx)
+
+        # Model predictions
+        for model_type in MODEL_TYPES:
+            if model_type not in case.get('predictions', {}):
+                continue
+            y_pred = case['predictions'][model_type]
+            fig.add_trace(go.Scatter(
+                x=case['dates'], y=y_pred,
+                name=f'{model_type} (Predicted)',
+                mode='lines',
+                line=dict(
+                    color=MODEL_COLORS.get(model_type, '#999'),
+                    width=2.5,
+                    dash=linestyles.get(model_type, 'solid'),
+                ),
+                hovertemplate=f'<b>{model_type} PREDICTED</b><br>'
+                              'Date: %{x|%Y-%m-%d}<br>'
+                              'Price: IDR %{y:,.2f}<extra></extra>',
+                visible=is_first,
+                opacity=0.85,
+                legendgroup=f'model_{model_type}',
+                showlegend=True,
+            ))
+            trace_owner.append(case_idx)
+
+    total_traces = len(trace_owner)
+
+    def _fmt(v, spec):
+        try:
+            if v is None or (isinstance(v, float) and np.isnan(v)):
+                return 'n/a'
+            return format(v, spec)
+        except Exception:
+            return 'n/a'
+
+    def _metrics_text(case):
+        lines = ['<b>Performance Metrics</b>']
+        header = (f"{'Model':<7}{'MSE':>11}{'RMSE':>10}"
+                  f"{'MAE':>10}{'MAPE%':>9}{'R²':>9}")
+        lines.append(f"<span style='font-family:monospace'>{header}</span>")
+        for mt in MODEL_TYPES:
+            m = case.get('metrics', {}).get(mt)
+            if not m:
+                continue
+            row = (f"{mt:<7}"
+                   f"{_fmt(m.get('MSE'),       '>11,.2f')}"
+                   f"{_fmt(m.get('RMSE'),      '>10,.4f')}"
+                   f"{_fmt(m.get('MAE'),       '>10,.4f')}"
+                   f"{_fmt(m.get('MAPE (%)'),  '>9,.2f')}"
+                   f"{_fmt(m.get('R2'),        '>9,.4f')}")
+            lines.append(f"<span style='font-family:monospace'>{row}</span>")
+        return '<br>'.join(lines)
+
+    def _annotations(case):
+        return [dict(
+            xref='paper', yref='paper',
+            x=1.02, y=0.5,
+            xanchor='left', yanchor='middle',
+            showarrow=False,
+            text=_metrics_text(case),
+            align='left',
+            bgcolor='rgba(255,255,255,0.95)',
+            bordercolor='gray',
+            borderwidth=1,
+            borderpad=10,
+            font=dict(size=12, family='Courier New'),
+        )]
+
+    # Dropdown buttons: one per case
+    buttons = []
+    for case_idx, case_label in enumerate(case_labels):
+        case = cases_dict[case_label]
+        visibility = [trace_owner[t] == case_idx for t in range(total_traces)]
+        title = (f'<b>{experiment_title}</b><br>'
+                 f'<sub>Case: {case["description"]}</sub>')
+        buttons.append(dict(
+            label=case_label,
+            method='update',
+            args=[
+                {'visible': visibility},
+                {'title': title, 'annotations': _annotations(case)},
+            ],
+        ))
+
+    first_case = cases_dict[case_labels[0]]
+    fig.update_layout(
+        title=(f'<b>{experiment_title}</b><br>'
+               f'<sub>Case: {first_case["description"]}</sub>'),
+        xaxis_title='Date',
+        yaxis_title='Close Price (IDR)',
+        height=750,
+        template='plotly_white',
+        hovermode='x unified',
+        font=dict(size=18, family='Times New Roman'),
+        margin=dict(l=80, r=380, t=160, b=80),
+        legend=dict(
+            x=0.01, y=0.99,
+            xanchor='left', yanchor='top',
+            bgcolor='rgba(255,255,255,0.9)',
+            bordercolor='gray', borderwidth=1,
+            font=dict(size=14, family='Times New Roman'),
+        ),
+        xaxis=dict(gridcolor='lightgray',
+                   tickfont=dict(size=14, family='Times New Roman')),
+        yaxis=dict(gridcolor='lightgray',
+                   tickfont=dict(size=14, family='Times New Roman')),
+        updatemenus=[dict(
+            type='dropdown',
+            direction='down',
+            x=0.5, y=1.18,
+            xanchor='center', yanchor='top',
+            showactive=True,
+            buttons=buttons,
+            bgcolor='rgba(220,220,220,0.95)',
+            bordercolor='gray', borderwidth=2,
+            font=dict(size=14, family='Times New Roman'),
+        )],
+        annotations=(
+            _annotations(first_case)
+            + [dict(
+                xref='paper', yref='paper',
+                x=0.5, y=1.24,
+                xanchor='center', yanchor='bottom',
+                showarrow=False,
+                text='<b>Select Case ▼</b>',
+                font=dict(size=12, family='Times New Roman'),
+            )]
+        ),
+    )
+
+    html_file = f'{save_dir}/{experiment_label}_case_by_case_actual_vs_predicted.html'
+    fig.write_html(html_file)
+    return fig, html_file
+
 
 print("stock_prediction_utils.py loaded successfully!")
 print(f"  ProportionScaler max value: {PROPORTION_SCALER_MAX}")
