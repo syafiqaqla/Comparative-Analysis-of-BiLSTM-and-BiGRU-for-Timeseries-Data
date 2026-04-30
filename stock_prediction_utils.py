@@ -53,17 +53,17 @@ TIMEFRAMES = ['weekly', 'monthly', 'yearly']
 # Color palettes (colorblind-friendly, distinct)
 MODEL_COLORS = {
     'BiLSTM': '#0072B2',   # Blue
-    'BiGRU': '#D5D100',    # Vermillion/Orange
+    'BiGRU': "#D5AA00",    # Vermillion/Orange
     'LSTM': '#009E73',     # Bluish Green
     'GRU': '#CC79A7',      # Reddish Purple
 }
 STOCK_COLORS = {
     'TLKM': '#0072B2',
-    'BBCA': '#D5D100',
+    'BBCA': "#D5AA00",
     'ASII': '#009E73',
     'UNVR': '#CC79A7',
 }
-ACTUAL_COLOR = "#FF0000"  # Black for actual values
+ACTUAL_COLOR = "#FF0000"  # Red for actual values
 
 # ============================================================
 # REPRODUCIBILITY
