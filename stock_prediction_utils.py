@@ -66,6 +66,23 @@ STOCK_COLORS = {
 ACTUAL_COLOR = "#FF0000"  # Red for actual values
 
 # ============================================================
+# INTERACTIVE PLOTLY EXPORT CONFIG
+# ------------------------------------------------------------
+# HTML files have no DPI of their own (Plotly renders SVG/WebGL),
+# but the toolbar's "Download plot as png" button can be configured
+# to export at high DPI. scale=3 -> ~288 DPI on a 1600x900 canvas.
+# Passed to every fig.write_html(config=PLOTLY_HTML_CONFIG) call so the saved HTML inherits it.
+# ============================================================
+PLOTLY_HTML_CONFIG = {
+    'toImageButtonOptions': {
+        'format': 'png',
+        'width': 1600,
+        'height': 900,
+        'scale': 3,
+    }
+}
+
+# ============================================================
 # REPRODUCIBILITY
 # ============================================================
 def set_seed(seed=RANDOM_SEED):
@@ -848,7 +865,7 @@ def create_interactive_data_split_visualization(df, train_ratio, stock_name,
     # Save as HTML
     ratio_str = f"{int(train_ratio*100)}_{int((1-train_ratio)*100)}"
     html_filename = f'{save_dir}/interactive_data_split_{stock_name}_{ratio_str}.html'
-    fig.write_html(html_filename)
+    fig.write_html(html_filename, config=PLOTLY_HTML_CONFIG)
     
     return fig, html_filename
 
@@ -956,7 +973,7 @@ def create_interactive_split_summary_visualization(daily_data, train_ratio,
     # Save as HTML
     ratio_str = f"{int(train_ratio*100)}_{int((1-train_ratio)*100)}"
     html_filename = f'{save_dir}/interactive_data_split_all_stocks_{ratio_str}.html'
-    fig.write_html(html_filename)
+    fig.write_html(html_filename, config=PLOTLY_HTML_CONFIG)
     
     return fig, html_filename
 
@@ -1041,7 +1058,7 @@ def create_interactive_split_bar_chart(daily_data, train_ratio,
     # Save as HTML
     ratio_str = f"{int(train_ratio*100)}_{int((1-train_ratio)*100)}"
     html_filename = f'{save_dir}/interactive_split_statistics_{ratio_str}.html'
-    fig.write_html(html_filename)
+    fig.write_html(html_filename, config=PLOTLY_HTML_CONFIG)
     
     return fig, html_filename
 
@@ -1204,7 +1221,7 @@ def create_interactive_results_dashboard_exp1(results_df, experiment_label, save
     )
     
     html_file = f'{save_dir}/{experiment_label}_results_dashboard.html'
-    fig.write_html(html_file)
+    fig.write_html(html_file, config=PLOTLY_HTML_CONFIG)
     return fig, html_file
 
 def create_interactive_metrics_heatmap_exp1(results_df, metric, experiment_label, save_dir='figures'):
@@ -1239,7 +1256,7 @@ def create_interactive_metrics_heatmap_exp1(results_df, metric, experiment_label
     )
     
     html_file = f'{save_dir}/{experiment_label}_{metric}_heatmap_interactive.html'
-    fig.write_html(html_file)
+    fig.write_html(html_file, config=PLOTLY_HTML_CONFIG)
     return fig, html_file
 
 def create_interactive_results_dashboard_exp2(results_df, experiment_label, save_dir='figures'):
@@ -1313,7 +1330,7 @@ def create_interactive_results_dashboard_exp2(results_df, experiment_label, save
     )
     
     html_file = f'{save_dir}/{experiment_label}_crossstock_dashboard.html'
-    fig.write_html(html_file)
+    fig.write_html(html_file, config=PLOTLY_HTML_CONFIG)
     return fig, html_file
 
 def create_interactive_transfer_matrix(results_df, metric, experiment_label, save_dir='figures'):
@@ -1356,7 +1373,7 @@ def create_interactive_transfer_matrix(results_df, metric, experiment_label, sav
         )
         
         html_file = f'{save_dir}/{experiment_label}_{model}_transfer_matrix_{metric}.html'
-        fig.write_html(html_file)
+        fig.write_html(html_file, config=PLOTLY_HTML_CONFIG)
         
         # Keep track of the last figure created (for display)
         last_fig = fig
@@ -1402,7 +1419,7 @@ def create_interactive_metrics_comparison(results_df, experiment_label, save_dir
     )
     
     html_file = f'{save_dir}/{experiment_label}_metrics_comparison.html'
-    fig.write_html(html_file)
+    fig.write_html(html_file, config=PLOTLY_HTML_CONFIG)
     return fig, html_file
 
 def create_interactive_model_radar_chart(results_df, experiment_label, save_dir='figures'):
@@ -1440,7 +1457,7 @@ def create_interactive_model_radar_chart(results_df, experiment_label, save_dir=
     )
     
     html_file = f'{save_dir}/{experiment_label}_model_radar.html'
-    fig.write_html(html_file)
+    fig.write_html(html_file, config=PLOTLY_HTML_CONFIG)
     return fig, html_file
 
 def create_interactive_actual_vs_predicted_exp4(test_dates, y_true, predictions_dict, 
@@ -1515,7 +1532,7 @@ def create_interactive_actual_vs_predicted_exp4(test_dates, y_true, predictions_
     )
     
     fname = f'{save_dir}/{experiment_label}_Train_{train_label}_Target_{target_stock}_actual_vs_predicted.html'
-    fig.write_html(fname)
+    fig.write_html(fname, config=PLOTLY_HTML_CONFIG)
     
     return fig, fname
 
@@ -1579,7 +1596,7 @@ def create_interactive_experiment4_dashboard(all_predictions, results_df, experi
         )
         
         html_file = f'{save_dir}/{experiment_label}_{metric}_heatmap_by_target.html'
-        fig.write_html(html_file)
+        fig.write_html(html_file, config=PLOTLY_HTML_CONFIG)
         print(f"  ✓ Saved: {html_file}")
 
 def create_interactive_model_comparison_by_target(results_df, target_stock, experiment_label, save_dir='figures'):
@@ -1632,7 +1649,7 @@ def create_interactive_model_comparison_by_target(results_df, target_stock, expe
     )
     
     html_file = f'{save_dir}/{experiment_label}_Target_{target_stock}_model_comparison.html'
-    fig.write_html(html_file)
+    fig.write_html(html_file, config=PLOTLY_HTML_CONFIG)
 
     return fig, html_file
 
@@ -1825,7 +1842,7 @@ def create_case_by_case_actual_vs_predicted(cases_dict, experiment_title,
     )
 
     html_file = f'{save_dir}/{experiment_label}_case_by_case_actual_vs_predicted.html'
-    fig.write_html(html_file)
+    fig.write_html(html_file, config=PLOTLY_HTML_CONFIG)
     return fig, html_file
 
 
