@@ -144,13 +144,13 @@ def set_ieee_style():
         'axes.titlesize': 20,
         'axes.titleweight': 'bold',
         'axes.labelsize': 20,
-        'xtick.labelsize': 20,
-        'ytick.labelsize': 20,
+        'xtick.labelsize': 40,
+        'ytick.labelsize': 40,
         'legend.fontsize': 14,
         'legend.framealpha': 0.9,
         'figure.figsize': (10, 6),
         'figure.dpi': 100,
-        'savefig.dpi': 150,
+        'savefig.dpi': 200,
         'savefig.bbox': 'tight',
         'savefig.pad_inches': 0.1,
         'font.family': 'serif',
@@ -158,7 +158,7 @@ def set_ieee_style():
         'axes.grid': True,
         'grid.alpha': 0.3,
         'grid.linestyle': '--',
-        'lines.linewidth': 1.5,
+        'lines.linewidth': 2.0,
         'lines.markersize': 4,
         'axes.spines.top': False,
         'axes.spines.right': False,
@@ -728,7 +728,7 @@ def create_interactive_data_split_visualization(df, train_ratio, stock_name,
             x=train_dates, y=train_prices,
             name='Training Data',
             mode='lines',
-            line=dict(color='#0072B2', width=2.5),
+            line=dict(color='#0072B2', width=2.0),
             hovertemplate='<b>Training</b><br>Date: %{x|%Y-%m-%d}<br>Price: IDR %{y:,.2f}<extra></extra>',
         )
     )
@@ -739,7 +739,7 @@ def create_interactive_data_split_visualization(df, train_ratio, stock_name,
             x=test_dates, y=test_prices,
             name='Test Data',
             mode='lines',
-            line=dict(color='#D55E00', width=2.5),
+            line=dict(color='#D55E00', width=2.0),
             hovertemplate='<b>Test</b><br>Date: %{x|%Y-%m-%d}<br>Price: IDR %{y:,.2f}<extra></extra>',
         )
     )
@@ -833,14 +833,16 @@ def create_interactive_data_split_visualization(df, train_ratio, stock_name,
         ),
         legend=dict(
             x=0.99,
-            y=0.01,
+            y=0.99,
             xanchor="right",
-            yanchor="bottom",
+            yanchor="top",
             bgcolor="rgba(255, 255, 255, 0.8)",
             bordercolor="gray",
             borderwidth=1
         ),
-        showlegend=True
+        showlegend=True,
+        xaxis_title_font=dict(size=25, family="Times New Roman"),
+        yaxis_title_font=dict(size=25, family="Times New Roman")
     )
     
     # Save as HTML
@@ -898,7 +900,7 @@ def create_interactive_split_summary_visualization(daily_data, train_ratio,
                 x=train_dates, y=train_prices,
                 name='Training',
                 mode='lines',
-                line=dict(color='#0072B2', width=1.5),
+                line=dict(color='#0072B2', width=2.0),
                 hovertemplate='<b>Train</b><br>%{x|%Y-%m-%d}<br>IDR %{y:,.0f}<extra></extra>',
                 showlegend=(idx == 0),
                 legendgroup="train"
@@ -912,7 +914,7 @@ def create_interactive_split_summary_visualization(daily_data, train_ratio,
                 x=test_dates, y=test_prices,
                 name='Test',
                 mode='lines',
-                line=dict(color='#D55E00', width=1.5),
+                line=dict(color='#D55E00', width=2.0),
                 hovertemplate='<b>Test</b><br>%{x|%Y-%m-%d}<br>IDR %{y:,.0f}<extra></extra>',
                 showlegend=(idx == 0),
                 legendgroup="test"
@@ -944,10 +946,10 @@ def create_interactive_split_summary_visualization(daily_data, train_ratio,
         showlegend=True,
         legend=dict(
             orientation="h",
-            yanchor="bottom",
-            y=1.02,
+            yanchor="top",
+            y=0.99,
             xanchor="right",
-            x=1
+            x=0.99
         )
     )
     
@@ -1031,7 +1033,9 @@ def create_interactive_split_bar_chart(daily_data, train_ratio,
             bgcolor="rgba(255, 255, 255, 0.8)",
             bordercolor="gray",
             borderwidth=1
-        )
+        ),
+        xaxis_title_font=dict(size=25, family="Times New Roman"),
+        yaxis_title_font=dict(size=25, family="Times New Roman")
     )
     
     # Save as HTML
@@ -1229,7 +1233,9 @@ def create_interactive_metrics_heatmap_exp1(results_df, metric, experiment_label
         yaxis_title="Stock",
         height=500,
         template='plotly_white',
-        font=dict(size=20, family="Times New Roman")
+        font=dict(size=20, family="Times New Roman"),
+        xaxis_title_font=dict(size=25, family="Times New Roman"),
+        yaxis_title_font=dict(size=25, family="Times New Roman")
     )
     
     html_file = f'{save_dir}/{experiment_label}_{metric}_heatmap_interactive.html'
@@ -1344,7 +1350,9 @@ def create_interactive_transfer_matrix(results_df, metric, experiment_label, sav
             yaxis_title="Train Stock",
             height=500,
             template='plotly_white',
-            font=dict(size=20, family="Times New Roman")
+            font=dict(size=20, family="Times New Roman"),
+            xaxis_title_font=dict(size=25, family="Times New Roman"),
+            yaxis_title_font=dict(size=25, family="Times New Roman")
         )
         
         html_file = f'{save_dir}/{experiment_label}_{model}_transfer_matrix_{metric}.html'
@@ -1388,7 +1396,9 @@ def create_interactive_metrics_comparison(results_df, experiment_label, save_dir
         height=600,
         template='plotly_white',
         font=dict(size=20, family="Times New Roman"),
-        legend=dict(x=0.99, y=0.99, xanchor='right', yanchor='top')
+        legend=dict(x=0.99, y=0.99, xanchor="right", yanchor="top"),
+        xaxis_title_font=dict(size=25, family="Times New Roman"),
+        yaxis_title_font=dict(size=25, family="Times New Roman")
     )
     
     html_file = f'{save_dir}/{experiment_label}_metrics_comparison.html'
@@ -1451,7 +1461,7 @@ def create_interactive_actual_vs_predicted_exp4(test_dates, y_true, predictions_
         x=test_dates, y=y_true,
         name='Actual Price',
         mode='lines',
-        line=dict(color='#FF0000', width=3),
+        line=dict(color='#FF0000', width=2.0),
         hovertemplate='<b>ACTUAL</b><br>Date: %{x|%Y-%m-%d}<br>Price: IDR %{y:,.2f}<extra></extra>',
         opacity=0.9
     ))
@@ -1467,7 +1477,7 @@ def create_interactive_actual_vs_predicted_exp4(test_dates, y_true, predictions_
                 mode='lines',
                 line=dict(
                     color=MODEL_COLORS.get(model_type, '#999'),
-                    width=2.5,
+                    width=2.0,
                     dash=linestyles.get(model_type, 'solid')
                 ),
                 hovertemplate=f'<b>{model_type}</b><br>Date: %{{x|%Y-%m-%d}}<br>Price: IDR %{{y:,.2f}}<extra></extra>',
@@ -1491,15 +1501,17 @@ def create_interactive_actual_vs_predicted_exp4(test_dates, y_true, predictions_
             gridcolor='lightgray'
         ),
         legend=dict(
-            x=0.01,
+            x=0.99,
             y=0.99,
-            xanchor="left",
+            xanchor="right",
             yanchor="top",
             bgcolor="rgba(255, 255, 255, 0.9)",
             bordercolor="gray",
             borderwidth=1,
             font=dict(size=18, family="Times New Roman")
-        )
+        ),
+        xaxis_title_font=dict(size=25, family="Times New Roman"),
+        yaxis_title_font=dict(size=25, family="Times New Roman")
     )
     
     fname = f'{save_dir}/{experiment_label}_Train_{train_label}_Target_{target_stock}_actual_vs_predicted.html'
@@ -1549,7 +1561,7 @@ def create_interactive_experiment4_dashboard(all_predictions, results_df, experi
             texttemplate='%{text:.4f}',
             textfont={"size": 14, "family": "Times New Roman"},
             hovertemplate='Model: %{y}<br>Target: %{x}<br>' + metric + ': %{z:.4f}<extra></extra>',
-            colorbar=dict(title=dict(text=metric, font=dict(size=18)), tickfont=dict(size=14))
+            colorbar=dict(title=dict(text=metric, font=dict(size=18)), tickfont=dict(size=20))
         ))
         
         fig.update_layout(
@@ -1560,8 +1572,10 @@ def create_interactive_experiment4_dashboard(all_predictions, results_df, experi
             width=800,
             template='plotly_white',
             font=dict(size=20, family="Times New Roman"),
-            xaxis=dict(tickfont=dict(size=18)),
-            yaxis=dict(tickfont=dict(size=18))
+            xaxis=dict(tickfont=dict(size=20)),
+            yaxis=dict(tickfont=dict(size=20)),
+            xaxis_title_font=dict(size=25, family="Times New Roman"),
+            yaxis_title_font=dict(size=25, family="Times New Roman")
         )
         
         html_file = f'{save_dir}/{experiment_label}_{metric}_heatmap_by_target.html'
@@ -1669,7 +1683,7 @@ def create_case_by_case_actual_vs_predicted(cases_dict, experiment_title,
             x=case['dates'], y=case['y_true'],
             name='Actual Price',
             mode='lines',
-            line=dict(color='#FF0000', width=3),
+            line=dict(color='#FF0000', width=2.0),
             hovertemplate='<b>ACTUAL PRICE</b><br>Date: %{x|%Y-%m-%d}<br>'
                           'Price: IDR %{y:,.2f}<extra></extra>',
             visible=is_first,
@@ -1690,7 +1704,7 @@ def create_case_by_case_actual_vs_predicted(cases_dict, experiment_title,
                 mode='lines',
                 line=dict(
                     color=MODEL_COLORS.get(model_type, '#999'),
-                    width=2.5,
+                    width=2.0,
                     dash=linestyles.get(model_type, 'solid'),
                 ),
                 hovertemplate=f'<b>{model_type} PREDICTED</b><br>'
@@ -1774,16 +1788,16 @@ def create_case_by_case_actual_vs_predicted(cases_dict, experiment_title,
         font=dict(size=18, family='Times New Roman'),
         margin=dict(l=80, r=380, t=160, b=80),
         legend=dict(
-            x=0.01, y=0.99,
-            xanchor='left', yanchor='top',
+            x=0.99, y=0.99,
+            xanchor="right", yanchor="top",
             bgcolor='rgba(255,255,255,0.9)',
             bordercolor='gray', borderwidth=1,
-            font=dict(size=14, family='Times New Roman'),
+            font=dict(size=18, family='Times New Roman'),
         ),
         xaxis=dict(gridcolor='lightgray',
-                   tickfont=dict(size=14, family='Times New Roman')),
+                   tickfont=dict(size=20, family='Times New Roman')),
         yaxis=dict(gridcolor='lightgray',
-                   tickfont=dict(size=14, family='Times New Roman')),
+                   tickfont=dict(size=20, family='Times New Roman')),
         updatemenus=[dict(
             type='dropdown',
             direction='down',
@@ -1806,6 +1820,8 @@ def create_case_by_case_actual_vs_predicted(cases_dict, experiment_title,
                 font=dict(size=12, family='Times New Roman'),
             )]
         ),
+        xaxis_title_font=dict(size=25, family="Times New Roman"),
+        yaxis_title_font=dict(size=25, family="Times New Roman")
     )
 
     html_file = f'{save_dir}/{experiment_label}_case_by_case_actual_vs_predicted.html'
