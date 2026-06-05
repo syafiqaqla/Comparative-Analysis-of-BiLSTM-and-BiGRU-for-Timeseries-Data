@@ -1148,6 +1148,198 @@ def perform_stationarity_test(data, name="Data"):
     }
 
 # ============================================================
+# FRIEDMAN TEST - Non-parametric comparison of multiple models
+# ============================================================
+def perform_friedman_test(results_df, metric='RMSE', group_by='Stock'):
+    """
+    Perform Friedman test to compare multiple models across groups (stocks, experiments).
+    
+    The Friedman test is a non-parametric test that compares the performance of 
+    multiple related samples (models) across different groups (stocks/timeframes).
+    
+    Args:
+        results_df: DataFrame with results containing Model, group_by column, and metric
+        metric: metric to test (e.g., 'RMSE', 'MAE', 'R2', 'MAPE (%)')
+        group_by: column to group by (e.g., 'Stock', 'Target_Stock')
+        
+    Returns:
+        dict containing test statistics and interpretation
+    """
+    from scipy.stats import friedmanchisquare
+    
+    # Pivot data: rows = groups, columns = models, values = metric
+    pivot_data = results_df.pivot_table(
+        values=metric, 
+        index=group_by, 
+        columns='Model', 
+        aggfunc='mean'
+    )
+    
+    # Ensure all model types are present
+    for model in MODEL_TYPES:
+        if model not in pivot_data.columns:
+            pivot_data[model] = np.nan
+    
+    pivot_data = pivot_data[MODEL_TYPES]  # Reorder to standard order
+    
+    # Perform Friedman test
+    # Each row is a group (e.g., stock), each column is a model
+    test_statistic, p_value = friedmanchisquare(*[pivot_data[col].dropna().values for col in pivot_data.columns])
+    
+    # Interpret result
+    alpha = 0.05
+    significant = 'Yes' if p_value < alpha else 'No'
+    interpretation = (
+        f"Significant difference detected (p < {alpha})" 
+        if p_value < alpha 
+        else f"No significant difference (p >= {alpha})"
+    )
+    
+    result_dict = {
+        'Metric': metric,
+        'Grouped By': group_by,
+        'Number of Groups': len(pivot_data),
+        'Number of Models': len(MODEL_TYPES),
+        'Test Statistic': round(test_statistic, 6),
+        'p-value': f'{p_value:.6f}',
+        'Significant (α=0.05)': significant,
+        'Interpretation': interpretation,
+        'Pivot Table': pivot_data
+    }
+    
+    return result_dict
+
+def perform_friedman_test_all_metrics(results_df, group_by='Stock'):
+    """
+    Perform Friedman test for all available metrics.
+    
+    Args:
+        results_df: DataFrame with results
+        group_by: column to group by
+        
+    Returns:
+        list of result dicts, one per metric
+    """
+    metrics = ['RMSE', 'MAE', 'R2']
+    if 'MAPE (%)' in results_df.columns:
+        metrics.append('MAPE (%)')
+    
+    all_results = []
+    for metric in metrics:
+        result = perform_friedman_test(results_df, metric=metric, group_by=group_by)
+        all_results.append(result)
+    
+    return all_results
+
+def print_friedman_results(friedman_result, show_pivot=False):
+    """
+    Pretty print Friedman test results.
+    
+    Args:
+        friedman_result: dict returned by perform_friedman_test
+        show_pivot: whether to display the pivot table
+    """
+    print(f"\n{'='*80}")
+    print(f"  FRIEDMAN TEST: {friedman_result['Metric']} (Grouped by: {friedman_result['Grouped By']})")
+    print(f"{'='*80}")
+    print(f"  Groups: {friedman_result['Number of Groups']}")
+    print(f"  Models: {friedman_result['Number of Models']}")
+    print(f"  Test Statistic: {friedman_result['Test Statistic']}")
+    print(f"  p-value: {friedman_result['p-value']}")
+    print(f"  Significant (α=0.05): {friedman_result['Significant (α=0.05)']}")
+    print(f"  Interpretation: {friedman_result['Interpretation']}")
+    
+    if show_pivot:
+        print(f"\n  Metric Values by Model and Group:")
+        print(f"  {friedman_result['Pivot Table'].to_string()}")
+    
+    print(f"{'='*80}\n")
+
+def create_friedman_test_visualization(friedman_results, experiment_label, save_dir='figures'):
+    """
+    Create interactive visualization of Friedman test results for all metrics.
+    
+    Args:
+        friedman_results: list of dicts from perform_friedman_test_all_metrics
+        experiment_label: e.g., 'Exp1_80_20'
+        save_dir: directory to save HTML
+        
+    Returns:
+        (fig, html_file_path)
+    """
+    os.makedirs(save_dir, exist_ok=True)
+    
+    metrics = [r['Metric'] for r in friedman_results]
+    p_values = [float(r['p-value']) for r in friedman_results]
+    test_stats = [r['Test Statistic'] for r in friedman_results]
+    
+    # Create subplots
+    fig = make_subplots(
+        rows=1, cols=2,
+        subplot_titles=('Test Statistics', 'p-values'),
+        specs=[[{"type": "bar"}, {"type": "bar"}]]
+    )
+    
+    # Add test statistic bars
+    fig.add_trace(
+        go.Bar(
+            x=metrics, y=test_stats,
+            name='Test Statistic',
+            marker_color=['#0072B2' if ts > 0 else '#D55E00' for ts in test_stats],
+            text=np.round(test_stats, 4),
+            textposition='outside',
+            hovertemplate='Metric: %{x}<br>Statistic: %{y:.4f}<extra></extra>',
+            showlegend=False
+        ),
+        row=1, col=1
+    )
+    
+    # Add p-value bars
+    fig.add_trace(
+        go.Bar(
+            x=metrics, y=p_values,
+            name='p-value',
+            marker_color=['#D55E00' if pv < 0.05 else '#009E73' for pv in p_values],
+            text=[f'{pv:.4f}' for pv in p_values],
+            textposition='outside',
+            hovertemplate='Metric: %{x}<br>p-value: %{y:.6f}<extra></extra>',
+            showlegend=False
+        ),
+        row=1, col=2
+    )
+    
+    # Add significance threshold line at α=0.05
+    for col in [1, 2]:
+        fig.add_hline(
+            y=0.05,
+            line_dash="dash",
+            line_color="red",
+            annotation_text="α=0.05",
+            annotation_position="right",
+            row=1, col=col
+        )
+    
+    fig.update_yaxes(title_text="Statistic Value", row=1, col=1)
+    fig.update_yaxes(title_text="p-value", row=1, col=2)
+    fig.update_xaxes(title_text="Metric", row=1, col=1)
+    fig.update_xaxes(title_text="Metric", row=1, col=2)
+    
+    fig.update_layout(
+        title=f"<b>{experiment_label} - Friedman Test Results</b><br><sub>Non-parametric comparison of models across groups</sub>",
+        height=600,
+        template='plotly_white',
+        font=dict(size=20, family="Times New Roman"),
+        showlegend=False,
+        xaxis_title_font=dict(size=25, family="Times New Roman"),
+        yaxis_title_font=dict(size=25, family="Times New Roman")
+    )
+    
+    html_file = f'{save_dir}/{experiment_label}_friedman_test.html'
+    fig.write_html(html_file, config=PLOTLY_HTML_CONFIG)
+    
+    return fig, html_file
+
+# ============================================================
 # INTERACTIVE RESULTS VISUALIZATIONS (Plotly)
 # ============================================================
 
