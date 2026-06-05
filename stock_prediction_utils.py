@@ -428,6 +428,30 @@ def build_model(model_type, lookback=LOOKBACK, units=UNITS, dropout=DROPOUT_RATE
 # ============================================================
 # EVALUATION METRICS
 # ============================================================
+def calculate_mape(y_true, y_pred):
+    """
+    Calculate Mean Absolute Percentage Error (MAPE).
+    
+    Args:
+        y_true: actual values
+        y_pred: predicted values
+        
+    Returns:
+        float: MAPE percentage value (handles division by zero)
+    """
+    y_true = np.array(y_true).flatten()
+    y_pred = np.array(y_pred).flatten()
+    
+    # MAPE: avoid division by zero
+    mask = y_true != 0
+    if mask.sum() > 0:
+        mape = np.mean(np.abs((y_true[mask] - y_pred[mask]) / y_true[mask])) * 100
+    else:
+        mape = np.inf
+    
+    return mape
+
+# ============================================================
 def evaluate_predictions(y_true, y_pred):
     """
     Calculate evaluation metrics on original (inverse-scaled) values.
