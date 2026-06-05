@@ -44,7 +44,6 @@ UNITS = 64
 DROPOUT_RATE = 0.2
 LEARNING_RATE = 0.001
 RANDOM_SEED = 42
-PATIENCE = 20  # Early stopping patience
 
 STOCKS = ['TLKM', 'BBCA', 'ASII', 'UNVR']
 MODEL_TYPES = ['BiLSTM', 'BiGRU', 'LSTM', 'GRU']
@@ -522,12 +521,6 @@ def train_and_evaluate(model_type, X_train, y_train, X_test, y_test,
         monitor='val_loss',
         save_best_only=True,
         mode='min',
-        verbose=1
-    )
-    early_stop = EarlyStopping(
-        monitor='val_loss',
-        patience=PATIENCE,
-        restore_best_weights=True,
         verbose=1
     )
     
