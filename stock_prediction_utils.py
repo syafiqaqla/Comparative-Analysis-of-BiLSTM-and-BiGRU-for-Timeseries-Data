@@ -746,7 +746,7 @@ def create_interactive_data_split_visualization(df, train_ratio, stock_name,
     
     # Calculate split point
     split_idx = int(len(close_values) * train_ratio)
-    split_date = dates[split_idx]  # Already a Timestamp from DatetimeIndex
+    split_date = dates[split_idx]  # eady a Timestamp from DatetimeIndex
     
     train_dates = dates[:split_idx]
     test_dates = dates[split_idx:]
